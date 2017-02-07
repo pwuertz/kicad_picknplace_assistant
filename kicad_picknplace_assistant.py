@@ -16,6 +16,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
 
     color_pad1 = "lightgray"
     color_pad2 = "#AA0000"
+    color_pad3 = "#CC4444"
     color_bbox1 = "None"
     color_bbox2 = "#E9AFAF"
 
@@ -74,6 +75,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             pos = np.asarray(p.GetPosition()) * 1e-6
             size = np.asarray(p.GetSize()) * 1e-6 * .9
 
+            is_pin1 = p.GetPadName() == "1" or p.GetPadName() == "A1"
             shape = p.GetShape()
             offset = p.GetOffset()  # TODO: check offset
 
@@ -91,8 +93,14 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             else:
                 print("Unsupported pad shape")
                 continue
+            rct.set_linewidth(0)
             rct.set_color(color_pad2 if highlight else color_pad1)
             rct.set_zorder(1)
+            # highlight pin1
+            if highlight and is_pin1:
+                rct.set_color(color_pad3)
+                rct.set_linewidth(.1)
+                rct.set_edgecolor(color_pad2)
             ax.add_patch(rct)
 
     plt.xlim(board_xmin, board_xmax)

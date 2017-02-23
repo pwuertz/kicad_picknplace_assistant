@@ -132,7 +132,12 @@ def generate_bom(pcb, filter_layer=None):
         if filter_layer is not None and filter_layer != m.GetLayer():
             continue
         # group part refs by value and footprint
-        group_key = (m.GetValue(), str(m.GetFPID().GetFootprintName()))
+        value = m.GetValue()
+        try:
+            footpr = str(m.GetFPID().GetFootprintName())
+        except:
+            footpr = str(m.GetFPID().GetLibItemName())
+        group_key = (value, footpr)
         refs = part_groups.setdefault(group_key, [])
         refs.append(m.GetReference())
 

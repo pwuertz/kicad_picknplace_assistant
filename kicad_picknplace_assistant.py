@@ -204,5 +204,5 @@ if __name__ == "__main__":
             create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu)
             pdf.savefig()
             plt.close()
-            break;
+            
     print("Output written to %s" % fname_out)

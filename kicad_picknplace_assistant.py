@@ -5,7 +5,8 @@ import numpy as np
 import pcbnew
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle, Circle, Ellipse, FancyBboxPatch
+import matplotlib.patches;
+from matplotlib.patches import Rectangle, Circle, Ellipse, FancyBboxPatch, Polygon
 
 
 def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
@@ -73,7 +74,9 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
         # plot pads
         for p in m.Pads():
             pos = np.asarray(p.GetPosition()) * 1e-6
-            size = np.asarray(p.GetSize()) * 1e-6 * .9
+            #additional scaling pads result in strange effects on pads made
+            #from multiple pads - so I removed the * 0.9
+            size = np.asarray(p.GetSize()) * 1e-6
 
             is_pin1 = p.GetPadName() == "1" or p.GetPadName() == "A1"
             shape = p.GetShape()
@@ -84,14 +87,37 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             cos, sin = np.cos(np.pi / 180. * angle), np.sin(np.pi / 180. * angle)
             dpos = np.dot([[cos, -sin], [sin, cos]], -.5 * size)
 
-            if shape == 1:
+            if shape == pcbnew.PAD_SHAPE_RECT:
                 rct = Rectangle(pos + dpos, size[0], size[1], angle=angle)
-            elif shape == 2:
-                rct = Rectangle(pos + dpos, size[0], size[1], angle=angle)
-            elif shape == 0:
+            elif shape == pcbnew.PAD_SHAPE_ROUNDRECT:
+                #draw rounded patch TODO: Check if corner radius has to be substracted form pad size
+                rct = FancyBboxPatch(pos + dpos, size[0], size[1],
+                boxstyle=matplotlib.patches.BoxStyle("Round", pad=p.GetRoundRectCornerRadius()*1e-6))
+                #and rotate it
+                xy=pos + dpos;
+                tfm = matplotlib.transforms.Affine2D().rotate_deg_around(xy[0],xy[1],-angle) + ax.transData
+                rct.set_transform(tfm)
+            elif shape == pcbnew.PAD_SHAPE_OVAL:
                 rct = Ellipse(pos, size[0], size[1], angle=angle)
+            elif shape == pcbnew.PAD_SHAPE_CIRCLE:
+                rct = Ellipse(pos, size[0], size[0], angle=angle)
+            elif shape == pcbnew.PAD_SHAPE_TRAPEZOID:
+                #draw trapezoid from scratch
+                sx=size[0]
+                sy=size[1]
+                delta=p.GetDelta()[1]*1e-6
+                xy=np.array([[(sx+delta)/2,sy/2],
+                             [(sx-delta)/2,-sy/2],
+                             [(-sx+delta)/2,-sy/2],
+                             [(-sx-delta)/2,sy/2]])
+                xy=xy + pos
+                rct = Polygon(xy)
+                #and rotate it
+                xy=pos;
+                tfm = matplotlib.transforms.Affine2D().rotate_deg_around(xy[0],xy[1],-angle) + ax.transData
+                rct.set_transform(tfm)
             else:
-                print("Unsupported pad shape")
+                print("Unsupported pad shape: {0} ".format(shape))
                 continue
             rct.set_linewidth(0)
             rct.set_color(color_pad2 if highlight else color_pad1)
@@ -178,4 +204,5 @@ if __name__ == "__main__":
             create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu)
             pdf.savefig()
             plt.close()
+            break;
     print("Output written to %s" % fname_out)

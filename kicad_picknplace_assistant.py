@@ -61,6 +61,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
         mrect_size = np.asarray(mrect.GetSize()) * 1e-6
         rct = Rectangle(mrect_pos, mrect_size[0], mrect_size[1])
         rct.set_color(color_bbox2 if highlight else color_bbox1)
+        rct.set_alpha(0.7)
         rct.set_zorder(-1)
         if highlight:
             rct.set_linewidth(.1)
@@ -69,7 +70,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
 
         # center marker
         if highlight:
-            plt.plot(center[0], center[1], ".", markersize=mrect_size.min(), color=color_pad2)
+            plt.plot(center[0], center[1], ".", markersize=mrect_size.min()/4, color=color_pad2)
 
         # plot pads
         for p in m.Pads():
@@ -90,12 +91,16 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             if shape == pcbnew.PAD_SHAPE_RECT:
                 rct = Rectangle(pos + dpos, size[0], size[1], angle=angle)
             elif shape == pcbnew.PAD_SHAPE_ROUNDRECT:
-                #draw rounded patch TODO: Check if corner radius has to be substracted form pad size
-                rct = FancyBboxPatch(pos + dpos, size[0], size[1],
-                boxstyle=matplotlib.patches.BoxStyle("Round", pad=p.GetRoundRectCornerRadius()*1e-6))
+                # subtract 2x corner radius from pad size, as FancyBboxPatch draws a rounded rectangle around the specified rectangle
+                pad=p.GetRoundRectCornerRadius()*1e-6
+                # the bottom-left corner of the FancyBboxPatch is the inside rectangle so need to compensate with the corner radius
+                corneroffset = np.asarray([pad,pad])
+                #draw rounded patch
+                rct = FancyBboxPatch(pos + dpos+corneroffset, size[0]-2*pad, size[1]-2*pad,
+                    boxstyle=matplotlib.patches.BoxStyle("Round", pad=pad))
                 #and rotate it
-                xy=pos + dpos;
-                tfm = matplotlib.transforms.Affine2D().rotate_deg_around(xy[0],xy[1],-angle) + ax.transData
+                xy=pos + dpos
+                tfm = matplotlib.transforms.Affine2D().rotate_deg_around(xy[0],xy[1],angle) + ax.transData
                 rct.set_transform(tfm)
             elif shape == pcbnew.PAD_SHAPE_OVAL:
                 rct = Ellipse(pos, size[0], size[1], angle=angle)
@@ -114,6 +119,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
                 rct = Polygon(xy)
                 #and rotate it
                 xy=pos;
+                # TODO DEBUG: based on corrections made in ROUNDRECT code above, the angle should NOT be negative(might be bug). No use case so ignored for now
                 tfm = matplotlib.transforms.Affine2D().rotate_deg_around(xy[0],xy[1],-angle) + ax.transData
                 rct.set_transform(tfm)
             else:
@@ -194,15 +200,16 @@ if __name__ == "__main__":
     # build BOM
     print("Loading %s" % args.file)
     pcb = pcbnew.LoadBoard(args.file)
-    bom_table = generate_bom(pcb, filter_layer=pcbnew.F_Cu)
+    
+    for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
+        bom_table = generate_bom(pcb, filter_layer=layer)
 
-    # for each part group, print page to PDF
-    fname_out = os.path.splitext(args.file)[0] + "_picknplace.pdf"
-    with PdfPages(fname_out) as pdf:
-        for i, bom_row in enumerate(bom_table):
-            print("Plotting page (%d/%d)" % (i+1, len(bom_table)))
-            create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu)
-            pdf.savefig()
-            plt.close()
-            
-    print("Output written to %s" % fname_out)
+        # for each part group, print page to PDF
+        fname_out = os.path.splitext(args.file)[0] + "_picknplace_{}.pdf".format(pcbnew.BOARD_GetStandardLayerName(layer))
+        with PdfPages(fname_out) as pdf:
+            for i, bom_row in enumerate(bom_table):
+                print("Plotting page (%d/%d)" % (i+1, len(bom_table)))
+                create_board_figure(pcb, bom_row, layer=layer)
+                pdf.savefig()
+                plt.close()
+        print("Output written to %s" % fname_out)

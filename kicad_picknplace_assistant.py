@@ -44,9 +44,17 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             horizontalalignment='center', verticalalignment='bottom')\
 
     # add ref list
+    textsize = 12
+    refdes_text = ", ".join(highlight_refs)
+    if len(refdes_text)>200:   # limit the size to prevent truncation
+        textsize=10
+    if len(refdes_text)>500:   # limit the size to prevent truncation
+        textsize=8
+    if len(refdes_text)>1100:
+        textsize=6
     ax.text(board_xmin + .5 * (board_xmax - board_xmin), board_ymax + 0.5,
             ", ".join(highlight_refs), wrap=True,
-            horizontalalignment='center', verticalalignment='top')
+            horizontalalignment='center', verticalalignment='top',fontsize=textsize)
 
     # draw parts
     for m in pcb.GetModules():

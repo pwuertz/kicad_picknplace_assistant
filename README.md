@@ -5,6 +5,8 @@ Manual pick-and-place document generator for KiCAD PCB files.
 A simple python script that generates PDF files that indicate the position of components on the PCB for every item on the BOM list.
 Each BOM line generates one corresponding page.
 
+For a more advanced, interactive solution see: [InteractiveHtmlBom](https://github.com/openscopeproject/InteractiveHtmlBom)
+
 ## Getting Started and Usage
 
 Simply call the script with Python 2.7, and provide the filename of your *.kicad_pcb file.

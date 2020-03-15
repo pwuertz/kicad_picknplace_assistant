@@ -9,7 +9,7 @@ import matplotlib.patches;
 from matplotlib.patches import Rectangle, Circle, Ellipse, FancyBboxPatch, Polygon
 
 
-def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
+def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu, invert_axis=False):
     qty, value, footpr, highlight_refs = bom_row
 
     plt.figure(figsize=(5.8, 8.2))
@@ -145,7 +145,10 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
 
     plt.xlim(board_xmin, board_xmax)
     plt.ylim(board_ymax, board_ymin)
-
+    
+    if (invert_axis):
+        plt.gca().invert_xaxis()
+    
     plt.axis('off')
 
 
@@ -210,6 +213,7 @@ if __name__ == "__main__":
     pcb = pcbnew.LoadBoard(args.file)
     
     for layer in (pcbnew.F_Cu, pcbnew.B_Cu):
+        should_invert = (layer == pcbnew.B_Cu)
         bom_table = generate_bom(pcb, filter_layer=layer)
 
         # for each part group, print page to PDF
@@ -217,7 +221,7 @@ if __name__ == "__main__":
         with PdfPages(fname_out) as pdf:
             for i, bom_row in enumerate(bom_table):
                 print("Plotting page (%d/%d)" % (i+1, len(bom_table)))
-                create_board_figure(pcb, bom_row, layer=layer)
+                create_board_figure(pcb, bom_row, layer, should_invert)
                 pdf.savefig()
                 plt.close()
         print("Output written to %s" % fname_out)

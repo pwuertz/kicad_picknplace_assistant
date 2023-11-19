@@ -213,7 +213,7 @@ if __name__ == "__main__":
         bom_table = generate_bom(pcb, filter_layer=layer)
 
         # for each part group, print page to PDF
-        fname_out = os.path.splitext(args.file)[0] + "_picknplace_{}.pdf".format(pcbnew.BOARD_GetStandardLayerName(layer))
+        fname_out = os.path.splitext(args.file)[0] + "_picknplace_{}.pdf".format(pcbnew.BOARD.GetLayerName(pcb,layer))
         with PdfPages(fname_out) as pdf:
             for i, bom_row in enumerate(bom_table):
                 print("Plotting page (%d/%d)" % (i+1, len(bom_table)))

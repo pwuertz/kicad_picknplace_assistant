@@ -92,8 +92,9 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             offset = p.GetOffset()  # TODO: check offset
 
             # pad rect
-            angle = p.GetOrientation() * 0.1
-            cos, sin = np.cos(np.pi / 180. * angle), np.sin(np.pi / 180. * angle)
+            e_angle = p.GetOrientation()
+            angle = e_angle.AsDegrees()
+            cos, sin = e_angle.Cos(), e_angle.Sin()
             dpos = np.dot([[cos, -sin], [sin, cos]], -.5 * size)
 
             if shape == pcbnew.PAD_SHAPE_RECT:

@@ -13,7 +13,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
     qty, value, footpr, highlight_refs = bom_row
 
     plt.figure(figsize=(5.8, 8.2))
-    ax = plt.subplot("111", aspect="equal")
+    ax = plt.subplot(111, aspect="equal")
 
     color_pad1 = "lightgray"
     color_pad2 = "#AA0000"
@@ -57,14 +57,14 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             horizontalalignment='center', verticalalignment='top',fontsize=textsize)
 
     # draw parts
-    for m in pcb.GetModules():
+    for m in pcb.Footprints():
         if m.GetLayer() != layer:
             continue
         ref, center = m.GetReference(), np.asarray(m.GetCenter()) * 1e-6
         highlight = ref in highlight_refs
 
         # bounding box
-        mrect = m.GetFootprintRect()
+        mrect = m.GetBoundingBox(False, False)
         mrect_pos = np.asarray(mrect.GetPosition()) * 1e-6
         mrect_size = np.asarray(mrect.GetSize()) * 1e-6
         rct = Rectangle(mrect_pos, mrect_size[0], mrect_size[1])
@@ -92,8 +92,9 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             offset = p.GetOffset()  # TODO: check offset
 
             # pad rect
-            angle = p.GetOrientation() * 0.1
-            cos, sin = np.cos(np.pi / 180. * angle), np.sin(np.pi / 180. * angle)
+            e_angle = p.GetOrientation()
+            angle = e_angle.AsDegrees()
+            cos, sin = e_angle.Cos(), e_angle.Sin()
             dpos = np.dot([[cos, -sin], [sin, cos]], -.5 * size)
 
             if shape == pcbnew.PAD_SHAPE_RECT:
@@ -167,7 +168,7 @@ def generate_bom(pcb, filter_layer=None):
 
     # build grouped part list
     part_groups = {}
-    for m in pcb.GetModules():
+    for m in pcb.Footprints():
         # filter part by layer
         if filter_layer is not None and filter_layer != m.GetLayer():
             continue
@@ -213,7 +214,7 @@ if __name__ == "__main__":
         bom_table = generate_bom(pcb, filter_layer=layer)
 
         # for each part group, print page to PDF
-        fname_out = os.path.splitext(args.file)[0] + "_picknplace_{}.pdf".format(pcbnew.BOARD_GetStandardLayerName(layer))
+        fname_out = os.path.splitext(args.file)[0] + "_picknplace_{}.pdf".format(pcbnew.BOARD.GetLayerName(pcb,layer))
         with PdfPages(fname_out) as pdf:
             for i, bom_row in enumerate(bom_table):
                 print("Plotting page (%d/%d)" % (i+1, len(bom_table)))

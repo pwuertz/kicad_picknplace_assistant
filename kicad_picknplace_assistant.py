@@ -64,7 +64,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
         highlight = ref in highlight_refs
 
         # bounding box
-        mrect = m.GetFootprintRect()
+        mrect = m.GetBoundingBox(False, False)
         mrect_pos = np.asarray(mrect.GetPosition()) * 1e-6
         mrect_size = np.asarray(mrect.GetSize()) * 1e-6
         rct = Rectangle(mrect_pos, mrect_size[0], mrect_size[1])

@@ -13,7 +13,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
     qty, value, footpr, highlight_refs = bom_row
 
     plt.figure(figsize=(5.8, 8.2))
-    ax = plt.subplot("111", aspect="equal")
+    ax = plt.subplot(111, aspect="equal")
 
     color_pad1 = "lightgray"
     color_pad2 = "#AA0000"

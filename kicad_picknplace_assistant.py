@@ -57,7 +57,7 @@ def create_board_figure(pcb, bom_row, layer=pcbnew.F_Cu):
             horizontalalignment='center', verticalalignment='top',fontsize=textsize)
 
     # draw parts
-    for m in pcb.GetModules():
+    for m in pcb.Footprints():
         if m.GetLayer() != layer:
             continue
         ref, center = m.GetReference(), np.asarray(m.GetCenter()) * 1e-6
@@ -167,7 +167,7 @@ def generate_bom(pcb, filter_layer=None):
 
     # build grouped part list
     part_groups = {}
-    for m in pcb.GetModules():
+    for m in pcb.Footprints():
         # filter part by layer
         if filter_layer is not None and filter_layer != m.GetLayer():
             continue
